@@ -15,3 +15,8 @@ These markdown files are integrated into a [VuePress](https://vuepress.vuejs.org
 This means that there is support for [markdown-it](https://markdown-it.github.io/) as well as some [VueJS](vuejs.org) capabilities (Interpolation, Directives, Components and more).
 
 If you have ideas for improvements in either of these areas, be sure to [open an issue](https://github.com/achendrick/jrescribe-transcripts/issues) so I can expand on the features.
+
+## References
+
+- https://realpython.com/python-speech-recognition/
+
