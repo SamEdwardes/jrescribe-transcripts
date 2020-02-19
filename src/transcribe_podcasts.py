@@ -1,50 +1,47 @@
-import requests
-import feedparser
 import pandas as pd
 import urllib.request
 import pydub
 import speech_recognition as sr
+from datetime import datetime
 
 from collections import defaultdict
 
-rss_url = "http://joeroganexp.joerogan.libsynpro.com/rss"
-jre_rss = feedparser.parse(rss_url)
+df = pd.read_csv("data/episode_tracker.csv")
+df["published"] = pd.to_datetime(df["published"])
 
-data = defaultdict(list)
+meta = podcast_meta = df.iloc[0:3,:]
+def download_episode(podcast_meta):
+    # name files
+    podcast_meta = df.iloc[0,:]
+    year = str(podcast_meta["published"].year)
+    month = str(podcast_meta["published"].month).zfill(2)
+    day = str(podcast_meta["published"].day).zfill(2)
+    date = year + "-" + month + "-" + day
+    out_tag = date + "__" + podcast_meta["title"].lower().replace(" ", "_")
 
-limit = 5
-count = 0
-for i in jre_rss.entries:
-    count += 1
-    if count > limit:
-        break
-    data["id"].append(i["id"])
-    data["title"].append(i["title"])
-    data["url"].append(i["link"])
-    # >>> jre_rss.entries[0].keys()
-    # dict_keys(['title', 'title_detail', 'published', 'published_parsed', 'id', 
-    # 'guidislink', 'links', 'link', 'image', 'summary', 'summary_detail', 'content', 
-    # 'itunes_duration', 'itunes_explicit', 'tags', 'subtitle', 'subtitle_detail', 
-    # 'itunes_episode', 'itunes_episodetype'])
+    # download episode
+    mp3_out = "data/audio/" + out_tag + ".mp3"
+    urllib.request.urlretrieve(podcast_meta["url"], mp3_out)
 
+    # convert wav to mp3 
+    wav_out = "data/audio/" + out_tag + ".wav"                                                          
+    mp3 = pydub.AudioSegment.from_mp3(mp3_out)
+    mp3.export(wav_out, format="wav")
 
-data = pd.DataFrame(data=data)
-print(data)
-
-# download episodes
-urllib.request.urlretrieve(data.loc[0, "url"], "data/audio/test.mp3")
-# convert wav to mp3                                                            
-mp3 = pydub.AudioSegment.from_mp3("data/audio/jre_test_clip.mp3")
-mp3.export("data/audio/jre_test_clip.wav", format="wav")
+    return None
 
 
-# create transcript
-r = sr.Recognizer()
-podcast_file = sr.AudioFile('data/audio/jre_test_clip.wav')
-with podcast_file as source:
-    audio = r.record(source)
-trans = r.recognize_google(audio)
-print(trans)
+def transcribe_episode():
+    # create transcript
+    transcript_out = "data/transcripts/" + out_tag + ".txt"
+    r = sr.Recognizer()
+    podcast_file = sr.AudioFile('data/audio/jre_test_clip.wav')
+    with podcast_file as source:
+        audio = r.record(source)
+    trans = r.recognize_google(audio)
+    print(trans)
+
+
 
 
 

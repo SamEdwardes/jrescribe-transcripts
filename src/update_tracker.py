@@ -38,6 +38,7 @@ def refresh_jre_data(rss_url):
         # 'itunes_episode', 'itunes_episodetype'])
     df = pd.DataFrame(data=data)
     df["published"] = pd.to_datetime(df["published"])
+    
     return df
 
 
@@ -67,7 +68,7 @@ def update_jre_tracker(df, episode_tracker_path):
         print("creating new tracker...")
         df.to_csv(episode_tracker_path, index=False)
     else:
-        print("tracker already exists...")
+        print("tracker already exists, updating with latest rss info...")
         df_old = pd.read_csv(episode_tracker_path)
 
         # merge existing tracker with updated data
