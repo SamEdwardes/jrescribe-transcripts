@@ -3,23 +3,31 @@
 # BUILD:
 #   docker build --tag jrescribetranscripts .
 # RUN CONTAINER AND OPEN BASH:
-#   docker run -it --rm jrescribetranscripts bin/bash
-FROM python
+#   docker run -it --rm jrescribetranscripts
+# RUN AND ATTACH DIR:
+# docker run -it --rm -v $(pwd):/root/jre jrescribetranscripts
+FROM ubuntu
 
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir pandas
-
+# basic set up
 RUN apt-get update
 RUN apt-get install tree
-RUN apt-get install -y python-dev 
+RUN apt-get install -y python3.7 python-dev python3-pip build-essential swig git libpulse-dev
+
+# more python packages
+RUN pip3 install --no-cache-dir pandas
 
 # POCKETSPHINX
 # https://pypi.org/project/pocketsphinx/
-# Make sure we have up-to-date versions of pip, setuptools and wheel
-RUN python -m pip install --upgrade pip setuptools wheel
-RUN apt-get install -y swig 
-RUN apt-get install -y python python-dev python-pip build-essential swig git libpulse-dev
-# RUN pip install --upgrade --no-cache-dir pocketsphinx
+RUN apt-get install -y libasound2-dev
+RUN pip3 install --upgrade --no-cache-dir pocketsphinx
+RUN pip3 install SpeechRecognition
+RUN pip3 install pydub
+RUN apt-get install -y ffmpeg
+
+# more python packages
+RUN pip3 install --no-cache-dir feedparser
+
 
 # REFERENCE
 # https://gist.github.com/AlekseiCherkes/8e8b9cd2dd22cceb77a0#file-dockerfile-sphinx
+# https://github.com/greghesp/assistant-relay/issues/49

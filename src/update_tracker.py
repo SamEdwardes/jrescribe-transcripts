@@ -1,13 +1,17 @@
 import os
+import re
 from collections import defaultdict
 
 import feedparser
 import numpy as np
 import pandas as pd
 
-rss_url = "http://joeroganexp.joerogan.libsynpro.com/rss"
-episode_tracker_path = "data/episode_tracker.csv"
-
+def clean_text(x):
+    x = x.lower()
+    x = re.sub(r'([^\s\w]|_)+', '', x) # remove all non-alpha numeric but space
+    x = x.replace("  ", "_")
+    x = x.replace(" ", "_")
+    return x
 
 def refresh_jre_data(rss_url):
     """Get fresh data from rss feed
@@ -38,16 +42,13 @@ def refresh_jre_data(rss_url):
         # 'itunes_episode', 'itunes_episodetype'])
     df = pd.DataFrame(data=data)
     df["published"] = pd.to_datetime(df["published"])
+    df["year"] = df["published"].apply(lambda x: str(x.year))
+    df["month"] = df["published"].apply(lambda x: str(x.month).zfill(2))
+    df["day"] = df["published"].apply(lambda x: str(x.day).zfill(2))
+    df["date"] = df["year"] + "-" + df["month"] + "-" + df["day"]
+    df["out_tag"] = df["date"] + "_" + df["title"].apply(clean_text)
     
     return df
-
-
-def make_test_df(df):
-    df = df.sample(n=100)
-    df["transcription_created"] = True
-    df.to_csv("data/episode_tracker_test.csv", index=False)
-    return None
-
 
 def update_jre_tracker(df, episode_tracker_path):
     """Update the tracker file with newest data from RSS feed
@@ -67,6 +68,7 @@ def update_jre_tracker(df, episode_tracker_path):
     if not os.path.exists(episode_tracker_path):
         print("creating new tracker...")
         df.to_csv(episode_tracker_path, index=False)
+        df["transcription_created"] = False
     else:
         print("tracker already exists, updating with latest rss info...")
         df_old = pd.read_csv(episode_tracker_path)
@@ -83,8 +85,12 @@ def update_jre_tracker(df, episode_tracker_path):
     
     return df
 
-# run
+##############################################
+# MAIN
+##############################################
+rss_url = "http://joeroganexp.joerogan.libsynpro.com/rss"
+episode_tracker_path = "data/episode_tracker.csv"
+
 df = refresh_jre_data(rss_url)
-make_test_df(df)
 df = update_jre_tracker(df, episode_tracker_path)
 df.to_csv(episode_tracker_path, index=False)
