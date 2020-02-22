@@ -1,56 +1,117 @@
-import pandas as pd
+import glob
+import os
 import urllib.request
-import pydub
-import speech_recognition as sr
+from collections import defaultdict
 from datetime import datetime
 
-from collections import defaultdict
-
-# read in tracker
-df = pd.read_csv("data/episode_tracker.csv")
-df["published"] = pd.to_datetime(df["published"])
-
-# add in extra metadata
-df["year"] = df["published"].apply(lambda x: str(x.year))
-df["month"] = df["published"].apply(lambda x: str(x.month).zfill(2))
-df["day"] = df["published"].apply(lambda x: str(x.day).zfill(2))
-df["date"] = df["year"] + "-" + df["month"] + "-" + df["day"]
-df["out_tag"] = df["date"] + "__" + df["title"].apply(lambda x: x.lower().replace(" ", "_"))
-df["out_tag"] = df["out_tag"].apply(lambda x: x.replace("#", ""))
+import numpy as np
+import pandas as pd
+import pydub
+import speech_recognition as sr
 
 
 def download_episode(url, out_tag):
-    # download episode
     mp3_out = "data/audio/" + out_tag + ".mp3"
-    print("downloading: " + mp3_out)
-    urllib.request.urlretrieve(url, mp3_out)
-    # convert mp3 to wav
-    wav_out = "data/audio/" + out_tag + ".wav"
-    print("converting mp3 to wav: " + wav_out)
-    mp3 = pydub.AudioSegment.from_mp3(mp3_out)
-    mp3.export(wav_out, format="wav")
+    if not os.path.exists(mp3_out):
+        print("downloading: " + mp3_out)
+        urllib.request.urlretrieve(url, mp3_out)
+    else:
+        print("already downloaded: " + mp3_out)
     return None
 
 
-def transcribe_episode(out_tag):
+def convert_mp3_to_wav(out_tag, clip_length_seconds=60):
+    mp3_in = "data/audio/" + out_tag + ".mp3"
+    wav_out = "data/audio/" + out_tag
+    print("converting mp3 to wav: " + wav_out)
+
+    # divide audio into chunks
+    audio = pydub.AudioSegment.from_mp3(mp3_in)
+    audio_duration = audio.duration_seconds
+    chunk_size = clip_length_seconds
+    num_chunks = int(np.ceil(audio_duration / chunk_size))
+    for i in range(0, num_chunks):
+        iteration = str(i + 1).zfill(3)
+        print("\t iteration: " + iteration)
+        start_ms = (i * chunk_size) * 1000  # convert to milliseconds
+        end_ms = min(audio_duration, (i + 1) * chunk_size) * \
+            1000  # convert to milliseconds
+        audio[start_ms: end_ms].export(
+            wav_out + f"_{iteration}.wav", format="wav", bitrate="64k")
+
+    # if not os.path.exists(wav_out):
+    #     print("converting mp3 to wav: " + wav_out)
+    #     mp3 = pydub.AudioSegment.from_mp3(mp3_in)
+    #     mp3.export(wav_out, format="wav", bitrate="64k")
+    # else:
+    #     print("already converted mp3 to wav: " + wav_out)
+    return None
+
+
+def transcribe_episode(out_tag, start_seconds=None, duration_seconds=None):
     # transcribe audio to text
-    transcript_out = "data/transcripts/" + out_tag + ".txt"
+    print("transcribing file: " + out_tag)
+    transcript_out = "data/transcripts/" + out_tag
     r = sr.Recognizer()
-    podcast_file = sr.AudioFile("data/audio/" + out_tag + ".wav")
-    print("recording audio file...")
-    with podcast_file as source:
-        audio = r.record(source)
-    print("transcribing audio file...")
-    trans = r.recognize_google(audio)
-    # write results to disk
-    print("writing transcription to disk...")
-    text_file = open(transcript_out, "w")
-    text_file.write(trans)
+    wav_path = "data/audio/" + out_tag
+    trans_list = []
+    iteration = 1
+    for i in glob.glob(wav_path + "*.wav"):
+        iteration_str = str(iteration).zfill(3)
+        print("\t iteration: " + i)
+        podcast_file = sr.AudioFile(i)
+        with podcast_file as source:
+            audio = r.record(source, offset=start_seconds,
+                             duration=duration_seconds)
+        trans = r.recognize_sphinx(audio)
+        trans_list.append("")
+        trans_list.append(trans)
+        # write results to disk
+        text_file = open(transcript_out + "_" + iteration_str + ".txt", "w")
+        text_file.write(trans)
+        text_file.close()
+        iteration += 1
+
+    # write all translation to single file
+    text_file = open(transcript_out + ".txt", "w")
+    text_file.write("\n".join(trans_list))
     text_file.close()
-    return trans
+    return trans_list
 
 
-# testing
-# download_episode(df.loc[0, "url"], df.loc[0, "out_tag"])
-# transcribe_episode("jre_test_clip")
-transcribe_episode(df.loc[0, "out_tag"])
+
+##############################################
+# MAIN
+##############################################
+# read in tracker
+# episode_tracker_path = "data/episode_tracker.csv"
+# df = pd.read_csv(episode_tracker_path)
+
+# for i in range(0, 1):
+#     print("\n" + "#"*32 + + "\n" + df.loc[i, "out_tag"] + "\n#"*32)
+#     start_time = datetime.now()
+#     if df.loc[i, "transcription_created"] == False:
+#         download_episode(df.loc[i, "url"], df.loc[i, "out_tag"])
+#         convert_mp3_to_wav(df.loc[i, "out_tag"])
+#         transcribe_episode(df.loc[i, "out_tag"], start_seconds=None, duration_seconds=None)
+#         df.loc[i, "transcription_created"] = True
+#         # os.remove("data/audio/" + df.loc[i, "out_tag"] + ".mp3")
+#         # os.remove("data/audio/" + df.loc[i, "out_tag"] + ".wav")
+#     else:
+#         print("already transcribed: " + df.loc[i, "out_tag"])
+#     end_time = datetime.now()
+#     print(f"Total time: {end_time - start_time}")
+#     print("COMPLETE!")
+#     df.to_csv(episode_tracker_path, index=False)
+
+
+##############################################
+# TESTING
+##############################################
+# try on short cip
+convert_mp3_to_wav("jre_test_clip")
+transcribe_episode("jre_test_clip")
+# download and test on long clip
+# download_episode(df.loc[2, "url"], df.loc[2, "out_tag"])
+# transcribe_episode(df.loc[2, "out_tag"])
+# test on a loop
