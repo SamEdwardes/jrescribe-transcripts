@@ -1,0 +1,2 @@
+python3 src/update_tracker.py
+python3 transcribe_podcasts.py

@@ -63,9 +63,9 @@ def transcribe_episode(out_tag, start_seconds=None, duration_seconds=None):
         trans_list.append("")
         trans_list.append(trans)
         # write intermediate results to disk
-        text_file = open(transcript_out + "_" + iteration_str + ".txt", "w")
-        text_file.write(trans)
-        text_file.close()
+        # text_file = open(transcript_out + "_" + iteration_str + ".txt", "w")
+        # text_file.write(trans)
+        # text_file.close()
         # delete wav file
         os.remove(i)
         iteration += 1
@@ -85,7 +85,7 @@ def transcribe_episode(out_tag, start_seconds=None, duration_seconds=None):
 episode_tracker_path = "data/episode_tracker.csv"
 df = pd.read_csv(episode_tracker_path)
 
-for i in range(1, 2):
+for i in range(0, df.shape[0]):
     start_time = datetime.now()
     out_tag = df.loc[i, "out_tag"]
     url = df.loc[i, "url"]
