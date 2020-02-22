@@ -91,9 +91,11 @@ for i in range(1, 2):
     url = df.loc[i, "url"]
     print("\n" + "#"  * 32 + "\n" + out_tag + "\n" + "#" * 32)
     if df.loc[i, "transcription_created"] == False:
+        # download, convert, transcribe
         download_episode(url, out_tag)
         convert_mp3_to_wav(out_tag, clip_length_seconds=120)
         transcribe_episode(out_tag, start_seconds=None, duration_seconds=None)
+        # update tracker and files
         df.loc[i, "transcription_created"] = True
         df.to_csv(episode_tracker_path, index=False)
         os.remove("data/audio/" + out_tag + ".mp3")
