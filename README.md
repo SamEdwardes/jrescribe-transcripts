@@ -1,22 +1,25 @@
-# JRE Scribe Transcripts
-Full transcripts for the Joe Rogan Experience podcast utilized in a VuePress site. https://jrescribe.com/
+# Joe Rogan Experience Transcripts
 
-## Contributing
+Python program to automatically transcribe Joe Rogan Experience (JRE) podcasts (http://podcasts.joerogan.net/).
 
-1. When updating a transcript, be sure to make use of [markdown-it](https://markdown-it.github.io/) and not HTML.
-2. Try to pay attention to the `<timemark />` components to make sure the seconds are aligned w/ the audio as closely as possible.
-3. Be aware that there are a handful of custom Vue components that may be useful: `<timemark />, more soon ...`
+## Background
 
+Inspired by https://github.com/achendrick/jrescribe-transcripts.
 
+## How to use
 
-#### Background
-These markdown files are integrated into a [VuePress](https://vuepress.vuejs.org) site.
+The program works by:
 
-This means that there is support for [markdown-it](https://markdown-it.github.io/) as well as some [VueJS](vuejs.org) capabilities (Interpolation, Directives, Components and more).
+1. Updating RSS feed data to track all JRE podcasts
+2. Downloading podcast in a `.mp3` format
+3. Breaking the `.mp3` file into smaller chunks and converting to `.wav` format
+4. For each chunk, a transcript is created using the [SpeechRecognition](https://pypi.org/project/SpeechRecognition/) package and [CMUSphinx](https://cmusphinx.github.io/wiki/)
 
-If you have ideas for improvements in either of these areas, be sure to [open an issue](https://github.com/achendrick/jrescribe-transcripts/issues) so I can expand on the features.
+#### Using CMUSphinx
+
+I found CMUSphinx tricky to set up on my computer. Many dependencies are required. To simplify things and avoid downloading extra programs to my computer I used Docker to create an isolated environment. I recommend using my [Dockerfile](Dockerfile) instead of trying to download everything to save yourself and your computer trouble shooting pain!
 
 ## References
 
+- https://github.com/achendrick/jrescribe-transcripts
 - https://realpython.com/python-speech-recognition/
-
